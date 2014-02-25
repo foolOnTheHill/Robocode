@@ -18,7 +18,7 @@ todo:
 
 - Adicionar movimento que evite colisões com as paredes.*/
 
-public class CrazyDiamonds extends AdvancedRobot {
+public class CrazyDiamond extends AdvancedRobot {
 	
 	static final double BASE_MOVEMENT = 180;
 	static final double GUN_FACTOR = 500; 
@@ -65,7 +65,7 @@ public class CrazyDiamonds extends AdvancedRobot {
 	
 	public void onScannedRobot(ScannedRobotEvent e) {
 		
-		if (e.getName().contains("Metabee")) {
+		if (e.getName().contains("CrazyDiamond")) {
 			movement = (-1)*movement;
 			return;
 		}
