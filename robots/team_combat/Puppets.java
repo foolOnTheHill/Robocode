@@ -1,4 +1,4 @@
-package zerg_rush;
+package my_robots;
 
 import java.awt.geom.Point2D;
 
@@ -12,14 +12,16 @@ import robocode.TeamRobot;
 import robocode.util.Utils;
 
 public class Puppets extends TeamRobot implements Droid {
-
+	
+	// Gerenciamento da munição
 	private final static double BULLET_POWER = 2.5D;
 	
+	// Movimento
 	private static int mode = -1;
 	private static int movement = 600;
-	
+
 	public void run() {
-		setAhead((movement=-movement)*(Math.random()+0.15));
+		setAhead((movement=-movement)*(Math.random()+0.15)); // Se move aleatoriamente
 	}
 
 	public void onMessageReceived(MessageEvent m) {
@@ -27,6 +29,8 @@ public class Puppets extends TeamRobot implements Droid {
 		if (!(m.getMessage() instanceof Point2D)) {
 			return;
 		}
+		
+		/* Mira na direção da posição indicada pelo Master */
 		
 		Point2D p = (Point2D) m.getMessage();
 
@@ -47,6 +51,7 @@ public class Puppets extends TeamRobot implements Droid {
 		setAhead((movement=-movement)*(Math.random()+0.15));
 	}
 
+	/* Caso bata em algum robô que não seja aliado, atira nele. */
 	public void onHitRobot(HitRobotEvent event) {
 		setAhead((movement=-movement)*(Math.random()+0.15));
 		if (!isTeammate(event.getName())) {
