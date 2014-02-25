@@ -1,4 +1,4 @@
-package zerg_rush;
+package my_robots;
 
 import java.awt.Color;
 import java.awt.geom.Point2D;
@@ -39,7 +39,8 @@ public class Master extends TeamRobot {
 	private static int mode = -1;
 
 	// Inimigos
-
+	ArrayList<String> enemyNames = new ArrayList<String>();
+	
 	// Histórico de movimentos
 	public static String enemyHistory = ""
 			+ (char) 0 + (char) 0 + (char) 0 + (char) 0
@@ -150,10 +151,7 @@ public class Master extends TeamRobot {
 			+ (char) 0 + (char) 0 + (char) 0 + (char) 0
 			+ (char) 0 + (char) 0 + (char) 0 + (char) 0;
 
-	String enemiesHistory[] = {enemyHistory, enemyHistory, enemyHistory, enemyHistory, enemyHistory}; // Novo
-	ArrayList<String> enemyNames = new ArrayList<String>(); // Novo
-	int next = 0;
-
+	/* Indica se o robô detectado já foi visto. */
 	public boolean visto(String name) {
 		boolean r = false;
 
@@ -183,10 +181,11 @@ public class Master extends TeamRobot {
 	}
 
 	public void onScannedRobot(ScannedRobotEvent e) {
-
+	
+		/*Verifica se é um aliado*/
 		if (isTeammate(e.getName())) {
 			return;
-		} else if (!visto(e.getName())) {
+		} else if (!visto(e.getName())) { //Se não foi visto anteriormente, adiciona em ordem reversa à lista de inimigos
 			enemyNames.add(e.getName());
 			Collections.sort(enemyNames);
 			Collections.reverse(enemyNames);
@@ -195,18 +194,19 @@ public class Master extends TeamRobot {
 		if (!e.getName().equals(enemyNames.get(0))) {
 			return;
 		}
-
-		int ri = MAX_MATCH_LEN;
+		
+		// Comportamento próprio do Master
+		/*-------------------------------------------------------------------------------------------------------*/
+		int ri = MAX_MATCH_LEN; /*Usado pra detectar os padrões de movimento*/
 		double rd = e.getBearingRadians();
-
 		int matchPos;
 
 		setTurnRadarLeftRadians(getRadarTurnRemaining());
-
+	
+		/*Verifica se o inimigo está mais fraco e se aproxima dele em caso positivo*/
 		if (enemyEnergy > (enemyEnergy = e.getEnergy())) {
 			setAhead((moveDir *= mode) * (Math.random() + NON_RAND));
 		}
-
 		setFire(BULLET_POWER);
 
 		// turn perpendicular with range control
@@ -215,22 +215,23 @@ public class Master extends TeamRobot {
 		// rd has enemy relative bearing
 		rd += getHeadingRadians();
 
-		// pattern gun from WeekendOnsession by Eric Simonton
-		// add last enemy move to the pattern
+		/*Adiciona o movimento mais recente do inimigo ao histórico*/
 		enemyHistory = String.valueOf((char) (e.getVelocity() * (Math.sin(e.getHeadingRadians() - rd)))).concat(enemyHistory);
 
-		// search for a match
+		/*Procura por um padrão*/
 		while ((matchPos = enemyHistory.indexOf(enemyHistory.substring(0, ri--), PREDICT_TICKS)) < 0);
 
-		// calculate aim offset
+		/*Calcula a variação que deve ser feita na mira, i.e., prevê os próximos movimentos do inimigo.*/
 		ri = PREDICT_TICKS;
 		do {
 			rd += ((short) enemyHistory.charAt(--matchPos))/(DISTANCE_DIVISOR);
 		} while (--ri > 0);
 
-		// turn gun
 		setTurnGunRightRadians(Utils.normalRelativeAngle(rd - getGunHeadingRadians()));
-
+		/*-------------------------------------------------------------------------------------------------------*/
+		
+		// Complementar: calcula a posição do inimigo para enviar para os aliados.
+		/*-------------------------------------------------------------------------------------------------------*/
 		double angleToEnemy = getHeadingRadians() + e.getBearingRadians();
 		double radarTurn = Utils.normalRelativeAngle(angleToEnemy - getRadarHeadingRadians());
 		double extraTurn = Math.min(Math.atan(5.0 / e.getDistance()), Rules.RADAR_TURN_RATE_RADIANS);
@@ -269,11 +270,12 @@ public class Master extends TeamRobot {
 		}
 
 		double theta = Utils.normalAbsoluteAngle(Math.atan2(predictedX - getX(), predictedY - getY()));
-
+		
 		setTurnRadarRightRadians(Utils.normalRelativeAngle(absoluteBearing - getRadarHeadingRadians()));
 		setTurnGunRightRadians(Utils.normalRelativeAngle(theta - getGunHeadingRadians()));
 		fire(bulletPower);
-
+		/*-------------------------------------------------------------------------------------------------------*/
+		
 		try {
 			Point2D lugar = new Point2D.Double(predictedX, predictedY);
 			broadcastMessage((Serializable) lugar);
@@ -281,23 +283,27 @@ public class Master extends TeamRobot {
 		
 	}
 
-
+	/* Se algum inimigo morreu, o remove da lista */
 	public void onRobotDeath(RobotDeathEvent e) {
 		enemyNames.remove(enemyNames.indexOf(e.getName()));
 	}
-
+	
+	/* Trata os choques com a parede */
 	public void onHitWall(HitWallEvent e) {
 		setAhead(moveDir = -moveDir);
 	}
-
+	
+	/* Trata os choques com balas */
 	public void onHitByBullet(HitByBulletEvent event) {
 		setAhead(moveDir = -moveDir);
 	}
-
+	
+	/* Trata os choques com outros robôs */
 	public void onHitRobot(HitRobotEvent event) {
 		setAhead(moveDir = -moveDir);
 	}
-
+	
+	/* Muda estratégia caso tenha morrido muito na primeira metade da competição */
 	public void onDeath(DeathEvent e) {
 		if (getRoundNum() < 5) {
 			mode = (-1)*mode;
